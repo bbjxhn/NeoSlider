@@ -80,6 +80,7 @@ void display_hashes(int num_hashes, uint16_t value) {
 }
 
 int main() {
+    // main program
     printf("\033[?25l");
     printf("\033[2J\033[H");
 
