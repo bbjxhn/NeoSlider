@@ -9,7 +9,7 @@
 #define I2C_DEVICE "/dev/i2c-5"
 #define NEOSLIDER_ADDR 0x30
 #define POTENTIOMETER_PIN 18
-#define MAX_HASHES 100
+#define MAX_HASHES 161
 
 #define SEESAW_GPIO_BASE 0x01
 #define SEESAW_GPIO_BULK_INPUT 0x04
@@ -60,7 +60,7 @@ uint16_t seesaw_analog_read(int i2c_fd, uint8_t channel) {
     return (buf[0] << 8) | buf[1];  
 }
 
-void display_hashes(int num_hashes, uint16_t value) {
+void display_hashes(int mid_point, uint16_t value) {
     printf("\033[2J\033[H");  // Clear screen and move cursor to home position
 
     // Determine color based on value
@@ -72,26 +72,43 @@ void display_hashes(int num_hashes, uint16_t value) {
         printf("\033[31m");  // Set color to red
     }
 
-    for (int i = 0; i < num_hashes; i++) {
+    // Calculate the left and right spread from the middle
+    int left_hashes = mid_point / 2;
+    int right_hashes = mid_point - left_hashes;
+
+    // Print spaces to move to the middle starting point
+    for (int i = 0; i < (MAX_HASHES / 2 - left_hashes); ++i) {
+        putchar(' ');
+    }
+
+    // Print left side hashes
+    for (int i = 0; i < left_hashes; ++i) {
         putchar('#');
     }
+
+    // Print right side hashes
+    for (int i = 0; i < right_hashes; ++i) {
+        putchar('#');
+    }
+
     printf("\033[0m");  // Reset color
     fflush(stdout);
 }
 
 int main() {
+    // main program
     printf("\033[?25l");
     printf("\033[2J\033[H");
 
     i2c_init();
     seesaw_init(i2c_fd);
 
-    uint16_t previous_value = 0, current_value;
+    uint16_t previous_value = 512, current_value;
 
     while (1) {
         current_value = seesaw_analog_read(i2c_fd, POTENTIOMETER_PIN);  // Read potentiometer value
-        int num_hashes = (int)((double)current_value / 1023 * MAX_HASHES);  // Scale ADC value to max hashes
-        display_hashes(num_hashes, current_value);
+        int mid_point = (int)((double)current_value / 1023 * MAX_HASHES);  // Scale ADC value to max hashes
+        display_hashes(mid_point, current_value);
         usleep(50000);  // Update every 100 milliseconds
     }
 
